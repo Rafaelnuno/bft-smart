@@ -19,11 +19,16 @@ public class BFTMapInteractiveClient {
         Console console = System.console();
 
         System.out.println("\nCommands:\n");
-        System.out.println("\tPUT: Insert value into the map");
-        System.out.println("\tGET: Retrieve value from the map");
-        System.out.println("\tSIZE: Retrieve the size of the map");
-        System.out.println("\tREMOVE: Removes the value associated with the supplied key");
-        System.out.println("\tKEYSET: List all keys available in the table");
+        System.out.println("\tMY_COINS: Retrieve all the coins of that client");
+        System.out.println("\tMINT: Create a new coin for that client");
+        System.out.println("\tSPEND: Transfer a certain value to another client");
+        System.out.println("\tMY_NFTS: Retrieve all the NTFs of that client");
+        System.out.println("\tMINT_NFT: Create a new NFT for that client");
+        System.out.println("\tREQUEST_NFT_TRANSFER: Create a request to transfer nft with an offered value and confirmation");
+        System.out.println("\tCANCEL_NFT_REQUEST: Cancel a certain nft request created before");
+        System.out.println("\tMY_NFT_REQUESTS: Retrieve all NFT requests");
+        System.out.println("\tMY_CLIENT_ID: Retrieve your client ID");
+        System.out.println("\tPROCESS_NFT_TRANSFER: Accept or reject a NFT request");
         System.out.println("\tEXIT: Terminate this client\n");
 
         while (true) {
@@ -56,6 +61,19 @@ public class BFTMapInteractiveClient {
 
                 //invokes the op on the servers
                 String value = bftMap.get(key);
+
+            //fazer para o resto
+
+
+
+
+
+
+
+
+
+
+
 
                 System.out.println("\nValue associated with " + key + ": " + value + "\n");
 

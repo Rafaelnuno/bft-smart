@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.Set;
 import java.util.TreeMap;
 
 public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
@@ -34,55 +35,120 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
 
     @Override
     public byte[] appExecuteOrdered(byte[] command, MessageContext msgCtx) {
+        byte[] reply = new byte[0];
         try {
-            BFTMapMessage<K,V> response = new BFTMapMessage<>();
-            BFTMapMessage<K,V> request = BFTMapMessage.fromBytes(command);
-            BFTMapRequestType cmd = request.getType();
-
+            ByteArrayInputStream byteIn = new ByteArrayInputStream(command);
+            ObjectInputStream objIn = new ObjectInputStream(byteIn);
+            ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+            ObjectOutputStream objOut = new ObjectOutputStream(byteOut);
+            boolean hasReply = false;
+            BFTMapRequestType cmd = (BFTMapRequestType) objIn.readObject();
             logger.info("Ordered execution of a {} request from {}", cmd, msgCtx.getSender());
 
             switch (cmd) {
                 //write operations on the map
                 case PUT:
-                    V oldValue = replicaMap.put(request.getKey(), request.getValue());
+                    K key = (K) objIn.readObject();
+                    V value = (V) objIn.readObject();
 
-                    if (oldValue != null) {
-                        response.setValue(oldValue);
+                    V ret = replicaMap.put(key, value);
+
+                    if (ret != null) {
+                        objOut.writeObject(ret);
+                        hasReply = true;
                     }
-                    return BFTMapMessage.toBytes(response);
+                    break;
+
+                case GET:
+                    key = (K)objIn.readObject();
+                    value = replicaMap.get(key);
+                    if (value != null) {
+                        objOut.writeObject(value);
+                        hasReply = true;
+                    }
+                    break;
+
+                case REMOVE:
+                    key = (K)objIn.readObject();
+                    value = replicaMap.remove(key);
+                    if (value != null) {
+                        objOut.writeObject(value);
+                        hasReply = true;
+                    }
+                    break;
+
+                case KEYSET:
+                keySet(objOut);
+                hasReply = true;
+                break;
+                case SIZE:
+                    int size = replicaMap.size();
+                    objOut.writeInt(size);
+                    hasReply = true;
+                    break;
+            }
+            if (hasReply) {
+                objOut.flush();
+                byteOut.flush();
+                reply = byteOut.toByteArray();
+            } else {
+                reply = new byte[0];
             }
 
-            return null;
+            
         }catch (IOException | ClassNotFoundException ex) {
             logger.error("Failed to process ordered request", ex);
             return new byte[0];
         }
+        return reply;
     }
 
     @Override
     public byte[] appExecuteUnordered(byte[] command, MessageContext msgCtx) {
+        byte[] reply = new byte[0];
         try {
-            BFTMapMessage<K,V> response = new BFTMapMessage<>();
-            BFTMapMessage<K,V> request = BFTMapMessage.fromBytes(command);
-            BFTMapRequestType cmd = request.getType();
-
-            logger.info("Unordered execution of a {} request from {}", cmd, msgCtx.getSender());
+            ByteArrayInputStream byteIn = new ByteArrayInputStream(command);
+            ObjectInputStream objIn = new ObjectInputStream(byteIn);
+            ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+            ObjectOutputStream objOut = new ObjectOutputStream(byteOut); 
+            boolean hasReply = false;
+            BFTMapRequestType cmd = (BFTMapRequestType) objIn.readObject();
+            logger.info("Ordered execution of a {} request from {}", cmd, msgCtx.getSender());
 
             switch (cmd) {
                 //read operations on the map
                 case GET:
-                    V ret = replicaMap.get(request.getKey());
+                    K key = (K) objIn.readObject();
+
+                    V ret = replicaMap.get(key);
 
                     if (ret != null) {
-                        response.setValue(ret);
+                        objOut.writeObject(ret);
+                        hasReply = true;
                     }
-                    return BFTMapMessage.toBytes(response);
+                    break;
+                case KEYSET:
+                    keySet(objOut);
+                    hasReply = true;
+                    break;
+                case SIZE:
+                    int size = replicaMap.size();
+                    objOut.writeInt(size);
+                    hasReply = true;
+                    break;
             }
+            if (hasReply) {
+                objOut.flush();
+                byteOut.flush();
+                reply = byteOut.toByteArray();
+            } else {
+                reply = new byte[0];
+            }
+
         } catch (IOException | ClassNotFoundException ex) {
             logger.error("Failed to process unordered request", ex);
-            return new byte[0];
         }
-        return null;
+        return reply;
     }
 
     @Override
@@ -107,6 +173,13 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
         } catch (ClassNotFoundException | IOException ex) {
             ex.printStackTrace(); //debug instruction
         }
+        
     }
-
+    private void keySet(ObjectOutput out) throws IOException, ClassNotFoundException {
+        Set<K> keySet = replicaMap.keySet();
+        int size = replicaMap.size();
+        out.writeInt(size);
+        for (K key : keySet)
+            out.writeObject(key);
+    }
 }

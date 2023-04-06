@@ -3,21 +3,15 @@
  *
  */
 package dti.bftmap;
+import java.io.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-
-import java.util.Map;
+import java.util.*;
 
 import bftsmart.tom.ServiceProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Set;
+
 
 public class BFTMap<K, V> implements Map<K, V> {
     private final Logger logger = LoggerFactory.getLogger("bftsmart");
@@ -33,31 +27,37 @@ public class BFTMap<K, V> implements Map<K, V> {
      * @return value The value previously added to the map
      */
     @Override
-    public V get(Object key) {
-        byte[] rep;
-        try {
-            BFTMapMessage<K,V> request = new BFTMapMessage<>();
-            request.setType(BFTMapRequestType.GET);
-            request.setKey(key);
-
-            //invokes BFT-SMaRt
-            rep = serviceProxy.invokeUnordered(BFTMapMessage.toBytes(request));
-        } catch (IOException e) {
-            logger.error("Failed to send GET request");
-            return null;
-        }
-
-        if (rep.length == 0) {
-            return null;
-        }
-        try {
-            BFTMapMessage<K,V> response = BFTMapMessage.fromBytes(rep);
-            return response.getValue();
-        } catch (ClassNotFoundException | IOException ex) {
-            logger.error("Failed to deserialized response of GET request");
-            return null;
-        }
+        public V get(Object key) {
+            byte[] rep;
+            try (ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+                 ObjectOutputStream objOut = new ObjectOutputStream(byteOut)) {
+    
+                objOut.writeObject(BFTMapRequestType.GET);
+                objOut.writeObject(key);
+    
+                objOut.flush();
+                byteOut.flush();
+    
+                //invokes BFT-SMaRt
+                rep = serviceProxy.invokeUnordered(byteOut.toByteArray());
+    
+            } catch (IOException e) {
+                logger.error("Failed to send GET request");
+                return null;
+            }
+    
+            if (rep.length == 0) {
+                return null;
+            }
+            try (ByteArrayInputStream byteIn = new ByteArrayInputStream(rep);
+                 ObjectInputStream objIn = new ObjectInputStream(byteIn)) {
+                return (V) objIn.readObject();
+            } catch (ClassNotFoundException | IOException ex) {
+                logger.error("Failed to deserialized response of GET request");
+                return null;
+            }
     }
+
 
     /**
      *
@@ -67,14 +67,16 @@ public class BFTMap<K, V> implements Map<K, V> {
     @Override
     public V put(K key, V value) {
         byte[] rep;
-        try {
-            BFTMapMessage<K,V> request = new BFTMapMessage<>();
-            request.setType(BFTMapRequestType.PUT);
-            request.setKey(key);
-            request.setValue(value);
+        try (ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+             ObjectOutputStream objOut = new ObjectOutputStream(byteOut)) {
+            objOut.writeObject(BFTMapRequestType.PUT);
+            objOut.writeObject(key);
+            objOut.writeObject(value);
 
-            //invokes BFT-SMaRt
-            rep = serviceProxy.invokeOrdered(BFTMapMessage.toBytes(request));
+            objOut.flush();
+            byteOut.flush();
+
+            rep = serviceProxy.invokeOrdered(byteOut.toByteArray());
         } catch (IOException e) {
             logger.error("Failed to send PUT request");
             return null;
@@ -83,9 +85,9 @@ public class BFTMap<K, V> implements Map<K, V> {
             return null;
         }
 
-        try {
-            BFTMapMessage<K,V> response = BFTMapMessage.fromBytes(rep);
-            return response.getValue();
+        try (ByteArrayInputStream byteIn = new ByteArrayInputStream(rep);
+             ObjectInputStream objIn = new ObjectInputStream(byteIn)) {
+            return  (V) objIn.readObject();
         } catch (ClassNotFoundException | IOException ex) {
             logger.error("Failed to deserialized response of PUT request");
             return null;
@@ -94,17 +96,79 @@ public class BFTMap<K, V> implements Map<K, V> {
 
     @Override
     public int size() {
-        throw new UnsupportedOperationException("You are supposed to implement this method :)");
+        try {
+            ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+            ObjectOutputStream objOut = new ObjectOutputStream(byteOut);
+            objOut.writeObject(BFTMapRequestType.SIZE);
+            objOut.flush();
+            byteOut.flush();
+
+            byte[] reply = serviceProxy.invokeUnordered(byteOut.toByteArray());
+            try (ByteArrayInputStream byteIn = new ByteArrayInputStream(reply);
+                 ObjectInputStream objIn = new ObjectInputStream(byteIn)) {
+                return objIn.readInt();
+            }
+
+        } catch (IOException e) {
+            logger.error("Failed to deserialized response of SIZE request");
+            return -1;
+        }
+    
+
     }
 
     @Override
     public V remove(Object key) {
-        throw new UnsupportedOperationException("You are supposed to implement this method :)");
+        try  {
+            ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+            ObjectOutputStream objOut = new ObjectOutputStream(byteOut);
+            objOut.writeObject(BFTMapRequestType.REMOVE);
+            objOut.writeObject(key);
+
+            objOut.flush();
+            byteOut.flush();
+
+            byte[] reply = serviceProxy.invokeOrdered(byteOut.toByteArray());
+            if (reply.length == 0)
+                return null;
+            try (ByteArrayInputStream byteIn = new ByteArrayInputStream(reply);
+                 ObjectInputStream objIn = new ObjectInputStream(byteIn)) {
+                return (V)objIn.readObject();
+            }
+
+        } catch (IOException | ClassNotFoundException e) {
+            logger.error("Failed to deserialized response of REMOVE request");
+            return null;
+        }
+
+  
     }
 
     @Override
-    public Set<K> keySet() {
-        throw new UnsupportedOperationException("You are supposed to implement this method :)");
+        public Set<K> keySet() {
+            try  {
+                ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+                ObjectOutputStream objOut = new ObjectOutputStream(byteOut);
+                objOut.writeObject(BFTMapRequestType.KEYSET);
+                objOut.flush();
+                byteOut.flush();
+        
+                byte[] reply = serviceProxy.invokeUnordered(byteOut.toByteArray());
+        
+                try (ByteArrayInputStream byteIn = new ByteArrayInputStream(reply);
+                     ObjectInputStream objIn = new ObjectInputStream(byteIn)) {
+                    int size = objIn.readInt();
+                    Set<K> result = new HashSet<>();
+                    while (size-- > 0) {
+                        result.add((K) objIn.readObject());
+                    }
+                    return result;
+                }
+        
+            } catch (IOException | ClassNotFoundException e) {
+                logger.error("Failed to deserialize response of KEYSET request");
+                return null;
+            }
     }
 
     @Override
@@ -134,7 +198,29 @@ public class BFTMap<K, V> implements Map<K, V> {
 
     @Override
     public Collection<V> values() {
-        throw new UnsupportedOperationException("You are supposed to implement this method :)");
+        try  {
+        ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+        ObjectOutputStream objOut = new ObjectOutputStream(byteOut);    
+        objOut.writeObject(BFTMapRequestType.VALUES);
+        objOut.flush();
+        byteOut.flush();
+
+        byte[] reply = serviceProxy.invokeUnordered(byteOut.toByteArray());
+        try (ByteArrayInputStream byteIn = new ByteArrayInputStream(reply);
+             ObjectInputStream objIn = new ObjectInputStream(byteIn)) {
+            int size = objIn.readInt();
+            List<V> result = new ArrayList<>(size);
+            for (int i = 0; i < size; i++) {
+                V value = (V) objIn.readObject();
+                result.add(value);
+            }
+            return result;
+        }
+
+    } catch (IOException | ClassNotFoundException e) {
+        logger.error("Failed to deserialize response of VALUES request", e);
+        return Collections.emptyList();
+    }
     }
 
     @Override
