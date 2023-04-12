@@ -153,8 +153,9 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
 
     @Override
     public byte[] getSnapshot() {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             ObjectOutput out = new ObjectOutputStream(bos)) {
+        try  {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutput out = new ObjectOutputStream(bos);
             out.writeObject(replicaMap);
             out.flush();
             bos.flush();
@@ -167,8 +168,9 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
 
     @Override
     public void installSnapshot(byte[] state) {
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(state);
-             ObjectInput in = new ObjectInputStream(bis)) {
+        try  {
+            ByteArrayInputStream bis = new ByteArrayInputStream(state);
+            ObjectInput in = new ObjectInputStream(bis);
             replicaMap = (TreeMap<K, V>) in.readObject();
         } catch (ClassNotFoundException | IOException ex) {
             ex.printStackTrace(); //debug instruction

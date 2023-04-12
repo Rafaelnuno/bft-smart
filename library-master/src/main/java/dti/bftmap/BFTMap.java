@@ -153,7 +153,7 @@ public class BFTMap<K, V> implements Map<K, V> {
                 objOut.flush();
                 byteOut.flush();
         
-                byte[] reply = serviceProxy.invokeUnordered(byteOut.toByteArray());
+                byte[] reply = serviceProxy.invokeOrdered(byteOut.toByteArray());
         
                 try (ByteArrayInputStream byteIn = new ByteArrayInputStream(reply);
                      ObjectInputStream objIn = new ObjectInputStream(byteIn)) {

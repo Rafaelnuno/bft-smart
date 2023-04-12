@@ -19,7 +19,7 @@ public class BFTMapInteractiveClient {
         Console console = System.console();
 
         System.out.println("\nCommands:\n");
-        System.out.println("\tMY_COINS: Retrieve all the coins of that client");
+        System.out.println("\tMY_COINS: Client's coins");
         System.out.println("\tMINT: Create a new coin for that client");
         System.out.println("\tSPEND: Transfer a certain value to another client");
         System.out.println("\tMY_NFTS: Retrieve all the NTFs of that client");
@@ -32,6 +32,7 @@ public class BFTMapInteractiveClient {
         System.out.println("\tEXIT: Terminate this client\n");
 
         while (true) {
+            
             String cmd = console.readLine("\n  > ");
 
             if (cmd.equalsIgnoreCase("PUT")) {
@@ -63,41 +64,117 @@ public class BFTMapInteractiveClient {
                 String value = bftMap.get(key);
 
             //fazer para o resto
-
-
-
-
-
-
-
-
-
-
-
-
                 System.out.println("\nValue associated with " + key + ": " + value + "\n");
 
-            } else if (cmd.equalsIgnoreCase("KEYSET")) {
+            } else if (cmd.equalsIgnoreCase("MY_COINS")) {
+                //invokes the op on the servers
+                String value;
+                Set<Integer> keys = bftMap.keySet();
+                System.out.println("Your coins: ");
+                for (Integer key : keys) {
+                    value = bftMap.get(key);
+                    String[] values = value.split("\\|");
+                    if (values[0].equals(Integer.toString(clientId)) && values[1].equals("C")) {
+                        System.out.println("Coin ID: " + key + " | Value: " + values[2]);
+                    }
+                }
 
-                System.out.println("\tYou are supposed to implement this command :)\n");
+            } else if (cmd.equalsIgnoreCase("MINT")) {
 
-            } else if (cmd.equalsIgnoreCase("REMOVE")) {
+                float coinValue;
+                try {
+                    coinValue = Float.parseFloat(console.readLine("Enter a value for the coin: "));
+                } catch (NumberFormatException e) {
+                    System.out.println("\tThe value is supposed to be an integer!\n");
+                    continue;
+                }
 
-                System.out.println("\tYou are supposed to implement this command :)\n");
+                Set<Integer> all_keys = bftMap.keySet();
+                int key = IDGen(all_keys);
+                String value = clientId + "|C|" + coinValue;
+                //invokes the op on the servers
+                bftMap.put(key, value);
 
-            } else if (cmd.equalsIgnoreCase("SIZE")) {
+                System.out.println("\nNew coin created with the ID: " + key + "\n");
 
-                System.out.println("\tYou are supposed to implement this command :)\n");
+            } else if (cmd.equalsIgnoreCase("SPEND")) {
+                List<Integer> keysList = new ArrayList<>();
+                int id = 0, finish = 0, receiverID = 0;
+                float value_sent = 0,  sum = 0;
 
-            } else if (cmd.equalsIgnoreCase("EXIT")) {
+                try {
+                    while (finish != -1) {
+                        id = Integer.parseInt(console.readLine("Enter the coins IDs (Insert -1 do terminate insertion of the IDs): "));
+                        if (!keysList.contains(id) && id > 0) {
+                            keysList.add(id);
+                        }
+                        finish = id;
+                    }
+                    receiverID = Integer.parseInt(console.readLine("Enter the reciever ID (Integer): "));
+                    boolean enough = false;
+                    for (Integer key : keysList) {
+                        String coin_value = bftMap.get(key);
+                        String[] coin_value_split = coin_value.split("\\|");
+                        sum += Float.parseFloat(coin_value_split[2]);
+                    }
+                    System.out.println("sum=" + sum);
+                    do {
+                        value_sent = Float.parseFloat(console.readLine("Enter a value to be transferred: "));
+                        if (sum >= value_sent) {
+                            enough = true;
+                        } else {
+                            System.out.println("Value to be transferred too high");
+                        }
+                    } while (!enough);
+
+                } catch (NumberFormatException e) {
+                    System.out.println("\tAll the IDs should be an integer\n");
+                    continue;
+                }
+
+                Set<Integer> all_keys = bftMap.keySet();
+                int key_receiver = IDGen(all_keys);
+                String value_r = receiverID + "|C|" + value_sent;
+                //invokes the op on the servers
+                bftMap.put(key_receiver, value_r);
+
+                for (Integer key : keysList) {
+                    bftMap.remove(key);
+                }
+                all_keys = bftMap.keySet();
+                int key_sender = IDGen(all_keys);
+                float value_remain = sum - value_sent;
+                String value_s = clientId + "|C|" + value_remain;
+                bftMap.put(key_sender, value_s);
+
+                //invokes the op on the servers
+
+                System.out.println("\nkey-value pair added to the map\n");
+            
+            }else if (cmd.equalsIgnoreCase("EXIT")) {
 
                 System.out.println("\tEXIT: Bye bye!\n");
                 System.exit(0);
 
-            } else {
+            } 
+            
+            else {
                 System.out.println("\tInvalid command :P\n");
             }
+            
         }
+        
+    }
+    public static int IDGen(Set<Integer> keys) {
+        Set<Integer> usedIds = new HashSet<>(keys);
+        Random random = new Random();
+    
+        int random_int = random.nextInt(1000);
+        while (usedIds.contains(random_int)) {
+            random_int = random.nextInt(1000);
+        }
+    
+        return random_int;
     }
 
 }
