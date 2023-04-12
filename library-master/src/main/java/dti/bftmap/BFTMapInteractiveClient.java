@@ -15,9 +15,9 @@ public class BFTMapInteractiveClient {
     public static void main(String[] args) throws IOException {
         int clientId = (args.length > 0) ? Integer.parseInt(args[0]) : 1001;
         BFTMap<Integer, String> bftMap = new BFTMap<>(clientId);
-
+      
         Console console = System.console();
-
+        
         System.out.println("\nCommands:\n");
         System.out.println("\tMY_COINS: Client's coins");
         System.out.println("\tMINT: Create a new coin for that client");
@@ -63,7 +63,7 @@ public class BFTMapInteractiveClient {
                 //invokes the op on the servers
                 String value = bftMap.get(key);
 
-            //fazer para o resto
+                //fazer para o resto
                 System.out.println("\nValue associated with " + key + ": " + value + "\n");
 
             } else if (cmd.equalsIgnoreCase("MY_COINS")) {
@@ -148,17 +148,54 @@ public class BFTMapInteractiveClient {
                 bftMap.put(key_sender, value_s);
 
                 //invokes the op on the servers
-
                 System.out.println("\nkey-value pair added to the map\n");
-            
-            }else if (cmd.equalsIgnoreCase("EXIT")) {
+
+            } else if (cmd.equalsIgnoreCase("MY_NFTS")) {
+                    // invokes the op on the servers
+                    String value;
+                    Set<Integer> keys = bftMap.keySet();
+                    System.out.println("Your Nfts:");
+                    for (Integer key : keys) {
+                        value = bftMap.get(key);
+                        String[] values = value.split("\\|");
+                        if (values[0].equals(Integer.toString(clientId)) && values[1].equals("N")) {
+                            System.out.println("Nft Id: " + key + " | Name: " + values[2] + " | Url: " + values[3]);
+                        }
+                    }
+                
+            } else if (cmd.equalsIgnoreCase("MINT_NFT")) {
+
+                    String userId = Integer.toString(clientId);               
+                    String name = console.readLine("Enter the Name of your Nft: ");
+                    String url = console.readLine("Enter the Url for your Nft: ");
+                
+                    // Verificar se já existe um NFT com o mesmo nome
+                    boolean nameExists = false;
+                    Set<Integer> keys = bftMap.keySet();
+                    for (Integer key : keys) {
+                        String value = bftMap.get(key);
+                        String[] values = value.split("\\|");
+                        if (values[0].equals(userId) && values[1].equals("N") && values[2].equals(name)) {
+                            nameExists = true;
+                            break;
+                        }
+                    }
+                    if (nameExists) {
+                        System.out.println("\nAn Nft with that name already exists\n");
+                        continue;
+                    }
+                    int nftId = IDGen(keys);
+                    String nftData = userId + "|N|" + name + "|" + url;
+                    bftMap.put(nftId, nftData);
+                
+                    System.out.println("\nA new Nft has been created with the ID: " + nftId + "\n");
+                  
+            } else if (cmd.equalsIgnoreCase("EXIT")) {
 
                 System.out.println("\tEXIT: Bye bye!\n");
                 System.exit(0);
-
-            } 
             
-            else {
+            } else {
                 System.out.println("\tInvalid command :P\n");
             }
             
