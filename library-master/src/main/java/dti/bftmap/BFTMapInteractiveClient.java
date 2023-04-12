@@ -151,7 +151,61 @@ public class BFTMapInteractiveClient {
 
                 System.out.println("\nkey-value pair added to the map\n");
             
-            }else if (cmd.equalsIgnoreCase("EXIT")) {
+            } else if (cmd.equalsIgnoreCase("MY_NFTS")) {
+                String value;
+                List<Integer> nftIds = new ArrayList<>();
+                for (Integer key : bftMap.keySet()) {
+                    value = bftMap.get(key);
+                    String[] values = value.split("\\|");
+                    if (values[0].equals(Integer.toString(clientId)) && values[1].equals("N")) {
+                        nftIds.add(key);
+                    }
+                }
+                if (nftIds.isEmpty()) {
+                    System.out.println("You don't have any NFTs.");
+                } else {
+                    System.out.println("Your NFTs:");
+                    for (Integer id : nftIds) {
+                        value = bftMap.get(id);
+                        String[] values = value.split("\\|");
+                        System.out.println("---> ID of the NFT: " + id + " | Name: " + values[2] + " | URI: " + values[3]);
+                    }
+                }
+            } else if (cmd.equalsIgnoreCase("MINT_NFT")) {
+                String name = null;
+                String uri = null;
+                boolean validInput = false;
+                
+                while (!validInput) {
+                    name = console.readLine("Enter the name of the new NFT: ");
+                    uri = console.readLine("Enter the URI of the new NFT: ");
+                    
+                    boolean nameExists = false;
+                    boolean uriExists = false;
+                    for (String value : bftMap.values()) {
+                        String[] valueSplit = value.split("\\|");
+                        if (valueSplit.length == 4) {
+                            if (name.equals(valueSplit[2])) {
+                                nameExists = true;
+                                System.out.println("Name already exists");
+                            }
+                            if (uri.equals(valueSplit[3])) {
+                                uriExists = true;
+                                System.out.println("URI already exists");
+                            }
+                        }
+                    }
+                    
+                    validInput = !nameExists && !uriExists;
+                }
+            
+                String newValue = clientId + "|N|" + name + "|" + uri;
+                int key = IDGen(bftMap.keySet());
+                bftMap.put(key, newValue);
+                System.out.println("\nNew NFT created with the ID: " + key + "\n");
+            }
+            
+            else if (cmd.equalsIgnoreCase("EXIT")) {
 
                 System.out.println("\tEXIT: Bye bye!\n");
                 System.exit(0);
