@@ -189,6 +189,82 @@ public class BFTMapInteractiveClient {
                     bftMap.put(nftId, nftData);
                 
                     System.out.println("\nA new Nft has been created with the ID: " + nftId + "\n");
+            
+                } else if (cmd.equalsIgnoreCase("REQUEST_NFT_TRANSFER")) {
+                    //fazer a verificação se o cliente tem coins para fazer a oferta e a parte da validade que mexe com tempo
+
+                    int id_nft;
+                    float value;
+                    long validity;
+
+                    // mostra todas as nfts que outros clientes tenham
+                    System.out.println("Available Nfts from other clients:");
+                    Set<Integer> all_keys = bftMap.keySet();
+                    for (Integer key : all_keys) {
+                        String currentValue = bftMap.get(key);
+                        String[] values = currentValue.split("\\|");
+                        if (values[0].equals(Integer.toString(clientId)) || !values[1].equals("N")) {
+                            continue;
+                        }
+                        System.out.println("\tNft Id: " + key + ", Owner Id: " + values[0] + ", Name: " + values[2] +", Url: " + values[3]);
+                    }
+
+                    try {
+                        id_nft = Integer.parseInt(console.readLine("Enter the Nft id that you want to give an offer: "));
+                        value = Float.parseFloat(console.readLine("Enter the value for the offer: "));
+                        validity = Long.parseLong(console.readLine("Enter the validity for the offer: "));
+                    } catch (NumberFormatException e) {
+                        System.out.println("\tInvalid input!\n");
+                        continue;
+                    }
+                    String nft = bftMap.get(id_nft);
+                    if (nft == null || !nft.split("\\|")[1].equals("N")) {
+                        System.out.println("\tInvalid Nft id!\n");
+                        continue;
+                    }
+
+                    String ownerId = nft.split("\\|")[0];
+                    if (ownerId.equals(Integer.toString(clientId))) {
+                        System.out.println("\tYou already own this Nft!\n");
+                        continue;
+                    }
+                    String requestValue = clientId + "|R|" + id_nft + "|" + value + "|" + validity + "|";
+                    boolean exists = false;
+                    for (Integer key : all_keys) {
+                        String currentValue = bftMap.get(key);
+                        String[] values = currentValue.split("\\|");
+                        if (values[0].equals(Integer.toString(clientId)) && values[1].equals("R") && values[2].equals(Integer.toString(id_nft))) {
+                            System.out.println("\tYou have already created a request for this Nft\n");
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
+                        int key = IDGen(all_keys);
+                        bftMap.put(key, requestValue);
+                        System.out.println("\tYour Request has been created and your Request Id is: " + key + "\n");
+                    }   
+            }else if (cmd.equalsIgnoreCase("MY_NFT_REQUESTS")) {
+                //invokes the op on the servers
+                String value;
+                Set<Integer> keys = bftMap.keySet();
+                System.out.println("Your NFT requests: ");
+                for (Integer key : keys) {
+                    value = bftMap.get(key);
+                    String[] values = value.split("\\|");
+                    if (values[0].equals(Integer.toString(clientId)) && values[1].equals("R")) {
+                        String nftName = "";
+                        String nftUrl = "";   
+                        String nftValue = values[3];
+                        String[] nftInfo = bftMap.get(Integer.parseInt(values[2])).split("\\|");
+                        if(nftInfo.length >= 3) {
+                            nftName = nftInfo[2];
+                            nftUrl = nftInfo[3]; 
+                        }
+                        System.out.println("Request Id: " + key +" | Nft Id: " + values[2] +" | Nft Name: " + nftName + " | Nft Url: " + nftUrl + " | Value Offered: " + nftValue + " | Validity: " + values[4]);
+                    }
+                }
+            
                   
             } else if (cmd.equalsIgnoreCase("EXIT")) {
 
