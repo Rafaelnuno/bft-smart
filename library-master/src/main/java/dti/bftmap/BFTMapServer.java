@@ -11,7 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -57,62 +59,59 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                 case SIZE:
                     
                 case REMOVE:
-                case SPEND:
-                String[] spendTokens = request.getValue().toString().split("\\|");
-                String[] coinsToSpend = spendTokens[0].split(",");
-                String receiver = spendTokens[1];
-                int coinvalue = Integer.parseInt(spendTokens[2]);
-                List<K> coinIds = new ArrayList<>();
-                int coinsValue = 0;
-                for (String coinToSpend : coinsToSpend) {
-                    K coinId = (K) ("coin" + coinToSpend);
-                    Object coinValue = replicaMap.get(coinId);
-                    if (coinValue instanceof String && ((String) coinValue).startsWith("coin|4|")) {
-                        int coinAmount = Integer.parseInt(coinValue.toString().split("\\|")[2]);
-                        coinIds.add(coinId);
-                        coinsValue += coinAmount;
-                    }
-                }
-                if (coinsValue >= coinvalue) {
-                    String receiverCoinValue = "coin|" + receiver + "|" + coinvalue;
-                    V issuerCoinValue = null;
-                    if (coinsValue > coinvalue) {
-                        int remainingValue = coinsValue - coinvalue;
-                        issuerCoinValue = (V) ("coin|4|" + remainingValue);
-                    }
-                    // update map with new coins
-                    K receiverCoinId = (K) ("coin" + UUID.randomUUID().toString());
-                    replicaMap.put(receiverCoinId, (V) receiverCoinValue);
-                    if (issuerCoinValue != null) {
-                        K issuerCoinId = (K) ("coin" + UUID.randomUUID().toString());
-                        replicaMap.put(issuerCoinId, issuerCoinValue);
-                        response.setValue(issuerCoinId);
-                    }
-                    for (K coinId : coinIds) {
-                        replicaMap.remove(coinId);
-                    }
-                } else {
-                    // not enough coins to spend
-                    response.setValue(0);
-                }
                 case MINT:
-                	String[] coinTokens = request.getValue().toString().split("\\|");
-                	String clientId = coinTokens[1];
-                	String value = coinTokens[2];
-                	
-                	//only user with id=0 has permission to MINT coins and value contains only digits
-                	if(clientId.equals("4") && value.matches("\\d+")) {
-                		V oldV = replicaMap.put(request.getKey(), request.getValue());
-                        if(oldV != null) {
-                            response.setValue(oldV);
-                        }else {
-                        	response.setValue(request.getKey());
+                    List<Object> list = (List<Object>) request.getValue();
+                    Coin coin = new Coin((Integer)list.get(1), (Float)list.get(2),new Random().nextLong());
+                    replicaMap.put(request.getKey(), (V) coin);
+                    response.setValue(0);
+                    return BFTMapMessage.toBytes(response);
+               /* case SPEND:
+                String[] spendTokens = request.getValue().toString().split("\\|");
+                String[] coinIds = spendTokens[1].split(",");
+                String receiverId = spendTokens[2];
+                int valueToTransfer = Integer.parseInt(spendTokens[3]);
+                String spclientId = spendTokens[4];
+            
+                // check if all the coins are valid and belong to the sender
+                int senderBalance = 0;
+                for (String coinId : coinIds) {
+                    int key = Integer.parseInt(coinId);
+                    String coin = (String) replicaMap.get(key);
+                    if (coin != null) {
+                        String[] coinValues = coin.split("\\|");
+                        if (coinValues[0].equals("coin") && coinValues[1].equals(spclientId)) {
+                            senderBalance += Integer.parseInt(coinValues[2]);
+                            replicaMap.remove(key); // remove the spent coin from the map
+                        } else {
+                            response.setValue(0);
+                            return BFTMapMessage.toBytes(response);
                         }
-
+                    } else {
+                        response.setValue(0);
                         return BFTMapMessage.toBytes(response);
-                	}
-                    break;
-                
+                    }
+                }
+
+                // check if the sender has enough balance to transfer
+                if (senderBalance < valueToTransfer) {
+                    System.out.println(senderBalance);
+                    response.setValue(0);
+                    return BFTMapMessage.toBytes(response);
+                }
+
+                // transfer the value to the receiver and update the sender's balance
+                String spendResult = "spend|" + spendTokens[1] + "|" + receiverId + "|" + valueToTransfer;
+                V oldValue2 = replicaMap.put(request.getKey(), (V) spendResult);
+                senderBalance -= valueToTransfer;
+
+                if (oldValue2 != null) {
+                    response.setValue(oldValue2);
+                } else {
+                    response.setValue(request.getKey());
+                }
+
+            return BFTMapMessage.toBytes(response);
+                */
             }
 
             return null;

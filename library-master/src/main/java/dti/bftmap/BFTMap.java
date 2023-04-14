@@ -8,7 +8,10 @@ import java.util.Map;
 import bftsmart.tom.ServiceProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 public class BFTMap<K, V> implements Map<K, V> {
@@ -60,18 +63,20 @@ public class BFTMap<K, V> implements Map<K, V> {
     public V put(K key, V value) {
         byte[] rep;
         try {
-        	String[] token = value.toString().split("\\|");
-        	BFTMapMessage<K,V> request = new BFTMapMessage<>();
-        	
-        	if(token[0].equals("coin")) {
-	            request.setType(BFTMapRequestType.MINT);
-        	} else if (token[0].equals("spend")) {
+            String[] token = value.toString().split("\\|");
+            System.out.println("Token array: " + Arrays.toString(token));
+            BFTMapMessage<K,V> request = new BFTMapMessage<>();
+            List<Object> list = (List<Object>) value;
+            if(list.get(0).equals("coin")) {
+                request.setType(BFTMapRequestType.MINT);
+            } else if (list.get(0).equals("coin")) {
                 request.setType(BFTMapRequestType.SPEND);
-            }else {
-	            request.setType(BFTMapRequestType.PUT);
-        	}
-        	request.setKey(key);
+            } else {
+                request.setType(BFTMapRequestType.PUT);
+            }
+            request.setKey(key);
             request.setValue(value);
+            
             //invokes BFT-SMaRt
             rep = serviceProxy.invokeOrdered(BFTMapMessage.toBytes(request));
         } catch (IOException e) {
@@ -85,7 +90,7 @@ public class BFTMap<K, V> implements Map<K, V> {
             BFTMapMessage<K,V> response = BFTMapMessage.fromBytes(rep);
             return response.getValue();
         } catch (ClassNotFoundException | IOException ex) {
-            logger.error("Failed to deserialized response of PUT request");
+            logger.error("Failed to deserialize response of PUT request");
             return null;
         }
     }
