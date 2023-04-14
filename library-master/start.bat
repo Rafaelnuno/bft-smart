@@ -1,5 +1,6 @@
 @echo off
 
+
 cd /d "C:\Users\rafap\OneDrive\Documentos\GitHub\bft-smart\library-master\build\install\library"
 
 start cmd /k smartrun.cmd dti.bftmap.BFTMapServer 0

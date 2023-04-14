@@ -57,7 +57,7 @@ public class BFTMapInteractiveClient {
             	for (int key : keys) {
             		String coin = (String) bftMap.get(key);
                 	String[] values = coin.split("\\|");
-                	if(values[0].equals("coin")) {
+                	if(values[0].equals("coin")&& values[1].equals(String.valueOf(clientId))) {
                 		String value = values[2];
                 		System.out.println("Key " + key + " -> value: " + value );
                 	}
@@ -89,8 +89,21 @@ public class BFTMapInteractiveClient {
                 }
                 keySeq+=1;
             }
-            	
-            else if (cmd.equalsIgnoreCase("MINT_NFT")){
+            else if (cmd.equalsIgnoreCase("MY_NFTS")) {
+                Set<Integer> keys = bftMap.keySet();
+                System.out.println("\nKeys in the map:");
+
+                for (int key : keys) {
+            		String nft = (String) bftMap.get(key);
+                	String[] nftTokens = nft.split("\\|");
+                	if(nftTokens[0].equals("nft")&& nftTokens[1].equals(String.valueOf(clientId))) {
+                		String name = nftTokens[2];
+                		String uri = nftTokens[3];
+                		System.out.println("Key " + key + " -> name: " + name + " URI: " + uri );
+                	}
+                    
+                }
+              }  else if (cmd.equalsIgnoreCase("MINT_NFT")){
                 
                 String name = console.readLine("Enter the name of the nft: ");
 
@@ -142,23 +155,10 @@ public class BFTMapInteractiveClient {
 
                 //System.out.println("\nValue associated with " + key + ": " + value + "\n");
 
-            } else if (cmd.equalsIgnoreCase("MY_NFTS")) {
-                Set<Integer> keys = bftMap.keySet();
-                System.out.println("\nKeys in the map:");
-
-                for (int key : keys) {
-            		String nft = (String) bftMap.get(key);
-                	String[] nftTokens = nft.split("\\|");
-                	if(nftTokens[0].equals("nft")) {
-                		String name = nftTokens[2];
-                		String uri = nftTokens[3];
-                		System.out.println("Key " + key + " -> name: " + name + " URI: " + uri );
-                	}
-                    
-                }
+            } 
                 
                 
-            } else if (cmd.equalsIgnoreCase("MY_NFT_REQUESTS")) {
+             else if (cmd.equalsIgnoreCase("MY_NFT_REQUESTS")) {
 
                 System.out.println("\tYou are supposed to implement this command :)\n");
 
