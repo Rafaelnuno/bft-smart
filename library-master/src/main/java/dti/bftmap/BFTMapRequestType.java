@@ -6,6 +6,6 @@
 package dti.bftmap;
 
 public enum BFTMapRequestType {
-    PUT,GET,SIZE,REMOVE,KEYSET,VALUES
+    PUT,GET,SIZE,REMOVE,KEYSET,VALUES,MINT,SPEND
 }
 
