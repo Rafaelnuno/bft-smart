@@ -265,6 +265,32 @@ public class BFTMapInteractiveClient {
                     }
                 }
             
+            }else if (cmd.equalsIgnoreCase("CANCEL_NFT_REQUEST")) {
+                int id_request;
+                try {
+                    id_request = Integer.parseInt(console.readLine("Enter the Request Id that you want to cancel: "));
+                } catch (NumberFormatException e) {
+                    System.out.println("\tThe Request Id is supposed to be an integer!\n");
+                    continue;
+                }
+            
+                boolean found = false;
+                Set<Integer> keys = bftMap.keySet();
+                for (Integer key : keys) {
+                    String value = bftMap.get(key);
+                    String[] values = value.split("\\|");
+                    if (values[1].equals("R") && key == id_request && values[0].equals(Integer.toString(clientId))) {
+                        found = true;
+                    
+                        bftMap.remove(key);
+                        System.out.println("Your Request was successfully canceled");
+                        break;
+                    }
+                }
+                if (!found) {
+                    System.out.println("There is no Request for this Id");
+                }
+            
                   
             } else if (cmd.equalsIgnoreCase("EXIT")) {
 
