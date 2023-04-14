@@ -1,9 +1,8 @@
 package dti.bftmap;
 
-import java.io.Serializable;
 import java.util.Random;
 
-public class Coin implements Serializable {
+public class Coin {
     private float value;
     private int clientId;
     private long id;

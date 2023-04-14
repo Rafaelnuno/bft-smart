@@ -75,9 +75,7 @@ public class BFTMapInteractiveClient {
                 
             
                 //invokes the op on the servers
-                 bftMap.put(keySeq, req);
-                Coin mintcoin = (Coin) bftMap.get(keySeq);
-                System.out.println(mintcoin.getClientId());
+                 bftMap.put(keySeq, req);      
                 keySeq++;
             
 
