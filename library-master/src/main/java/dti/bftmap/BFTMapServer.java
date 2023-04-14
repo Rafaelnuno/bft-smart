@@ -62,7 +62,7 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                 case MINT:
                     List<Object> list = (List<Object>) request.getValue();
                     Coin coin = new Coin((Integer)list.get(1), (Float)list.get(2),new Random().nextLong());
-                    replicaMap.put(request.getKey(), (V) coin);
+                    replicaMap.put((K)request.getKey(), (V) coin);
                     response.setValue(0);
                     return BFTMapMessage.toBytes(response);
                /* case SPEND:
