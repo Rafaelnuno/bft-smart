@@ -129,11 +129,59 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                         return BFTMapMessage.toBytes(response);
                 	}
                     break;
+                case REQUEST_NFT_TRANSFER:
+                String[] transferTokens = request.getValue().toString().split("\\|");
+                String clienId = transferTokens[1];
+                String nftId = transferTokens[2];
+                
+                Set<K> keySet = replicaMap.keySet();
+
+                for (K key : keySet) {
+                    V nftEntry = replicaMap.get(key);
+                    String[] token = nftEntry.toString().split("\\|");
+                    if (token[0].equals("nft_request") && clienId.equals(token[1]) && nftId.equals(token[2])) {
+                        response.setValue("You already have a nft request for this nft");
+                        return BFTMapMessage.toBytes(response);
+                    }
+                }
+
+                replicaMap.put(request.getKey(),request.getValue());
+                System.out.println(response.equals(null));
+                return BFTMapMessage.toBytes(response);
+
+                // // Check if the user already owns the NFT
+                // V nftEntry = replicaMap.get(request.getKey());
+                // String nftOwner = nftEntry.toString().split("\\|")[1];
+                // if (clienId.equals(nftOwner)) {
+                //     response.setValue("You are the owner of the NFT.");
+                //     return BFTMapMessage.toBytes(response);
+                // }
+                
+                // Check if the user has already made a purchase offer for the given NFT
+                // for (V v : replicaMap.values()) {
+                //     String[] tokens = v.toString().split("\\|");
+                //     if (tokens[0].equals("request_transfer") && tokens[1].equals(clienId) && tokens[2].equals(nftId)) {
+                //         response.setValue("You have already made a purchase offer for this NFT.");
+                //         return BFTMapMessage.toBytes(response);
+                //     }
+                // }
+                
+                // // Create the purchase offer
+                // String coins = transferTokens[3];
+                // String value1 = transferTokens[4];
+                // String validity = transferTokens[5];
+                // String transferRequest = "request_transfer" + "|" + clienId + "|" + nftId + "|" + coins + "|" + value1 + "|" + validity;
+                // V oldV = replicaMap.put(request.getKey(), (V) transferRequest);
+                // if (oldV != null) {
+                //     response.setValue(oldV);
+                // } else {
+                //     response.setValue(request.getKey());
+                // }
+                
+                // return BFTMapMessage.toBytes(response);
                 
             }
                 
-
-
             return null;
         }catch (IOException | ClassNotFoundException ex) {
             logger.error("Failed to process ordered request", ex);

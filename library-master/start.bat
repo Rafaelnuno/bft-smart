@@ -1,7 +1,10 @@
 @echo off
 
+start cmd /k gradlew installdist
 
-cd /d "C:\Users\rafap\OneDrive\Documentos\GitHub\bft-smart\library-master\build\install\library"
+ping 192.0.0.1 -n 2 > nul
+
+cd /d "build\install\library"
 
 start cmd /k smartrun.cmd dti.bftmap.BFTMapServer 0
 start cmd /k smartrun.cmd dti.bftmap.BFTMapServer 1
