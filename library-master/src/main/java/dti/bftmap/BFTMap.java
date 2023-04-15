@@ -6,6 +6,8 @@ package dti.bftmap;
 import java.io.IOException;
 import java.util.Map;
 import bftsmart.tom.ServiceProxy;
+import io.netty.util.internal.SystemPropertyUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Collection;
@@ -67,8 +69,8 @@ public class BFTMap<K, V> implements Map<K, V> {
 	            request.setType(BFTMapRequestType.MINT);
         	} else if (token[0].equals("spend")) {
                 request.setType(BFTMapRequestType.SPEND);
-            }//else if (token[0].equals("nft")) {
-                //request.setType(BFTMapRequestType.MINT_NFT);}
+            }else if (token[0].equals("nft")) {
+                request.setType(BFTMapRequestType.MINT_NFT);}
                 else if (token[0].equals("nft_request")) {
                     request.setType(BFTMapRequestType.REQUEST_NFT_TRANSFER);
                 }else {

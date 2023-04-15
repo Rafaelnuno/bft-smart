@@ -110,7 +110,7 @@ public class BFTMapInteractiveClient {
                     
                 }
               }  else if (cmd.equalsIgnoreCase("MINT_NFT")){
-                System.out.println(keySeq);
+                
                 String name = console.readLine("Enter the name of the nft: ");
 
                 String uri = console.readLine("Enter the URI of the nft: ");

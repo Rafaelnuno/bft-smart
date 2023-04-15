@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -112,6 +113,7 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                 }
                 
                 return BFTMapMessage.toBytes(response);
+
                 case MINT:
                 	String[] coinTokens = request.getValue().toString().split("\\|");
                 	String clientId = coinTokens[1];
@@ -129,6 +131,40 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                         return BFTMapMessage.toBytes(response);
                 	}
                     break;
+
+                case MINT_NFT:
+                
+                String[] nftTokens = request.getValue().toString().split("\\|");
+                String nftName = nftTokens[2];
+               
+                
+                    boolean nftExists = false;
+                    for(Map.Entry<K,V> nftEntry : replicaMap.entrySet()){
+                        V nftValue = nftEntry.getValue();
+                        String[] nft = ((String) nftValue).split("\\|");
+                        if(nft[0].equals("nft") && nftName.equals(nft[2])){
+                            System.out.println("entrei1");
+                            nftExists = true;
+                            break;
+                        }
+                    }
+                    System.out.println(nftExists);
+                    if(nftExists){
+                        System.out.println("entrei");
+                        response.setValue("Already exists a NFT with that name");
+                        return BFTMapMessage.toBytes(response);
+                    }
+
+                    V oldV = replicaMap.put(request.getKey(), request.getValue());
+                    if(oldV != null) {
+                        response.setValue(oldV);
+                    }else {
+                        response.setValue(request.getKey());
+                    }
+
+                    return BFTMapMessage.toBytes(response);
+                
+
                 case REQUEST_NFT_TRANSFER:
                 String[] transferTokens = request.getValue().toString().split("\\|");
                 String clienId = transferTokens[1];
