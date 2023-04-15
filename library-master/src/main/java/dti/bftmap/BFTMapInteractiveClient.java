@@ -74,22 +74,32 @@ public class BFTMapInteractiveClient {
                 keySeq+=1;
 
             }else if (cmd.equalsIgnoreCase("SPEND")) {
-                String coins = console.readLine("Enter the ids of the coins to spend (comma-separated): ");
-                String receiver = console.readLine("Enter the id of the receiver: ");
+                String coins = "";
+                while (true) {
+                    coins = console.readLine("Enter the ids of the coins to spend (comma-separated): ");
+                    String[] coinIds = coins.split(",");
+                    if (coinIds.length < 1) {
+                        System.out.println("Invalid number of coin ids. Please enter 2 to 4 comma-separated coin ids.");
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                String receiverId = console.readLine("Enter the id of the receiver: ");
                 String value = console.readLine("Enter the value to transfer: ");
-                String spendCommand = "spend" + "|" + coins + "|" + receiver + "|" + value;
-            
+                String spendCommand = "spend" + "|" + clientId + "|" + coins + "|" + receiverId + "|" + value;
+                
                 //invokes the op on the servers
                 String values = bftMap.put(keySeq, spendCommand).toString();
-            
+                
                 if (values.equals("0")) {
                     System.out.println("\nInvalid spend operation.");
                 } else {
                     System.out.println("\nCoin id: " + values + " created for issuer.");
                 }
                 keySeq+=1;
-            }
-            else if (cmd.equalsIgnoreCase("MY_NFTS")) {
+        
+            } else if (cmd.equalsIgnoreCase("MY_NFTS")) {
                 Set<Integer> keys = bftMap.keySet();
                 System.out.println("\nKeys in the map:");
 

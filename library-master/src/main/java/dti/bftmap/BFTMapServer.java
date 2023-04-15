@@ -58,43 +58,60 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                     
                 case REMOVE:
                 case SPEND:
-                String[] spendTokens = request.getValue().toString().split("\\|");
-                String[] coinsToSpend = spendTokens[0].split(",");
-                String receiver = spendTokens[1];
-                int coinvalue = Integer.parseInt(spendTokens[2]);
-                List<K> coinIds = new ArrayList<>();
-                int coinsValue = 0;
-                for (String coinToSpend : coinsToSpend) {
-                    K coinId = (K) ("coin" + coinToSpend);
-                    Object coinValue = replicaMap.get(coinId);
-                    if (coinValue instanceof String && ((String) coinValue).startsWith("coin|4|")) {
-                        int coinAmount = Integer.parseInt(coinValue.toString().split("\\|")[2]);
-                        coinIds.add(coinId);
-                        coinsValue += coinAmount;
+                int totalCoins = 0;
+                int remainingValue = 0;
+                String[] spend = request.getValue().toString().split("\\|");
+                List<Integer> usedCoins = new ArrayList<>();
+                int senderId = Integer.parseInt(spend[1]);
+                int receiverId = Integer.parseInt(spend[3]);
+                int spendValue = Integer.parseInt(spend[4]);
+                
+                for (String coin : spend[2].split(",")) {
+                    try {
+                        String[] ret = replicaMap.get(Integer.parseInt(coin)).toString().split("\\|");
+                        int coinValue = Integer.parseInt(ret[2]);
+                        int coinOwnerId = Integer.parseInt(ret[1]);
+                
+                        // Check if the coin belongs to this client
+                        if (coinOwnerId != senderId) {
+                            response.setValue(0); 
+                            return BFTMapMessage.toBytes(response);
+                        }
+                
+                        totalCoins += coinValue;
+                        usedCoins.add(Integer.parseInt(coin));
+                    } catch(NumberFormatException | NullPointerException e) {
+                        response.setValue(0); 
+                        return BFTMapMessage.toBytes(response);
                     }
                 }
-                if (coinsValue >= coinvalue) {
-                    String receiverCoinValue = "coin|" + receiver + "|" + coinvalue;
-                    V issuerCoinValue = null;
-                    if (coinsValue > coinvalue) {
-                        int remainingValue = coinsValue - coinvalue;
-                        issuerCoinValue = (V) ("coin|4|" + remainingValue);
-                    }
-                    // update map with new coins
-                    K receiverCoinId = (K) ("coin" + UUID.randomUUID().toString());
-                    replicaMap.put(receiverCoinId, (V) receiverCoinValue);
-                    if (issuerCoinValue != null) {
-                        K issuerCoinId = (K) ("coin" + UUID.randomUUID().toString());
-                        replicaMap.put(issuerCoinId, issuerCoinValue);
-                        response.setValue(issuerCoinId);
-                    }
-                    for (K coinId : coinIds) {
-                        replicaMap.remove(coinId);
-                    }
-                } else {
-                    // not enough coins to spend
-                    response.setValue(0);
+                
+                if(totalCoins < spendValue) {
+                    response.setValue(0); 
+                    return BFTMapMessage.toBytes(response);
                 }
+                
+                remainingValue = totalCoins - spendValue;
+                V receiverCoin = (V) ("coin"+ "|" + spend[3] + "|" + spend[4]);
+                replicaMap.put(request.getKey(), receiverCoin);
+                
+                for (Integer usedCoin : usedCoins) {
+                    replicaMap.remove(usedCoin);
+                }
+                
+                if (remainingValue > 0) {
+                    V senderCoin = (V) ("coin"+ "|" + spend[1] + "|" + remainingValue); 
+                    K key = (K) Integer.valueOf(Integer.valueOf(request.getKey().toString())+1);
+                    V oldVal = replicaMap.put(key, senderCoin);
+                
+                    if(oldVal != null) {
+                        response.setValue(oldVal);
+                    } else {
+                        response.setValue(key);
+                    }
+                }
+                
+                return BFTMapMessage.toBytes(response);
                 case MINT:
                 	String[] coinTokens = request.getValue().toString().split("\\|");
                 	String clientId = coinTokens[1];
