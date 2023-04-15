@@ -7,6 +7,7 @@ package dti.bftmap;
 import java.io.Console;
 import java.io.IOException;
 import java.util.Set;
+import java.util.UUID;
 
 
 
@@ -109,7 +110,8 @@ public class BFTMapInteractiveClient {
                 	if(nftTokens[0].equals("nft")&& nftTokens[1].equals(String.valueOf(clientId))) {
                 		String nftname = nftTokens[2];
                 		String uri = nftTokens[3];
-                		System.out.println("Key " + key + " -> name: " + nftname + " URI: " + uri );
+                        String id = nftTokens[4];
+                		System.out.println("Key " + key + " -> name: " + nftname + " URI: " + uri + " nftId: " + id );
                 	}
                     
                 }
@@ -118,7 +120,8 @@ public class BFTMapInteractiveClient {
                 String name = console.readLine("Enter the name of the nft: ");
 
                 String uri = console.readLine("Enter the URI of the nft: ");
-                String nft = "nft"+ "|" + clientId + "|" + name +"|" + uri; 
+                String id = UUID.randomUUID().toString();
+                String nft = "nft"+ "|" + clientId + "|" + name +"|" + uri + "|" + id; 
 
                 //invokes the op on the servers
                 bftMap.put(keySeq, nft);
