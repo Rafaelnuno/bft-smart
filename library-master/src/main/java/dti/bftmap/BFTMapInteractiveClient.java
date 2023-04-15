@@ -156,8 +156,7 @@ public class BFTMapInteractiveClient {
                 	}
                     
                 }
-                
-                
+                       
             } else if (cmd.equalsIgnoreCase("MY_NFT_REQUESTS")) {
 
                 System.out.println("\tYou are supposed to implement this command :)\n");
