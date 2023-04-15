@@ -13,6 +13,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -68,6 +69,7 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                 int spendValue = Integer.parseInt(spend[4]);
                 
                 for (String coin : spend[2].split(",")) {
+                    System.out.println(coin);
                     try {
                         String[] ret = replicaMap.get(Integer.parseInt(coin)).toString().split("\\|");
                         int coinValue = Integer.parseInt(ret[2]);
@@ -76,6 +78,7 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                         // Check if the coin belongs to this client
                         if (coinOwnerId != senderId) {
                             response.setValue(0); 
+                            System.out.println(senderId);
                             return BFTMapMessage.toBytes(response);
                         }
                 
@@ -83,12 +86,14 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                         usedCoins.add(Integer.parseInt(coin));
                     } catch(NumberFormatException | NullPointerException e) {
                         response.setValue(0); 
+                        System.out.println(e);
                         return BFTMapMessage.toBytes(response);
                     }
                 }
                 
                 if(totalCoins < spendValue) {
-                    response.setValue(0); 
+                    response.setValue(0);
+                    System.out.println("saldo excedido"); 
                     return BFTMapMessage.toBytes(response);
                 }
                 
@@ -101,14 +106,16 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                 }
                 
                 if (remainingValue > 0) {
-                    V senderCoin = (V) ("coin"+ "|" + spend[1] + "|" + remainingValue); 
+                    V senderCoin = (V) ("coin"+ "|" + spend[1] + "|" + remainingValue + "|" + Integer.toString(new Random().nextInt(1000))); 
                     K key = (K) Integer.valueOf(Integer.valueOf(request.getKey().toString())+1);
                     V oldVal = replicaMap.put(key, senderCoin);
                 
                     if(oldVal != null) {
                         response.setValue(oldVal);
+                        System.out.println(oldVal);
                     } else {
                         response.setValue(key);
+                        System.out.println(key);
                     }
                 }
                 

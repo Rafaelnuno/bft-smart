@@ -83,7 +83,10 @@ public class BFTMapInteractiveClient {
                 String receiverId = console.readLine("Enter the id of the receiver: ");
                 String value = console.readLine("Enter the value to transfer: ");
                 String spendCommand = "spend" + "|" + clientId + "|" + coins + "|" + receiverId + "|" + value;
-                
+                Set<Integer> keys = bftMap.keySet();
+                keySeq = IDGen(keys);
+                //invokes the op on the servers
+                bftMap.put(keySeq, spendCommand ).toString();
                 //invokes the op on the servers
                 String values = bftMap.put(keySeq, spendCommand).toString();
                 
@@ -92,7 +95,7 @@ public class BFTMapInteractiveClient {
                 } else {
                     System.out.println("\nCoin id: " + values + " created for issuer.");
                 }
-                keySeq+=1;
+                
         
             } else if (cmd.equalsIgnoreCase("MY_NFTS")) {
                 Set<Integer> keys = bftMap.keySet();
@@ -281,15 +284,17 @@ public class BFTMapInteractiveClient {
 
                             if( vTokens[0].equals("coin") && vTokens[3].equals(coinId)) {
 
-                                String newCoinId = Integer.toString(new Random().nextInt(1000));
-                                String coin_recv = "coin"+ "|" + vTokens[1] + "|" + Integer.toString(Integer.parseInt(vTokens[2]) - value) + "|" + newCoinId; 
-                                String coin_send = "coin"+ "|" + Integer.toString(clientId) + "|" + Integer.toString(value) + "|" + Integer.toString(new Random().nextInt(1000)); 
-
+                                String spendCommand = "spend" + "|" + vTokens[1] + "|" + coinId + "|" + clientId + "|" + value;
+    
                                 //System.out.println(coin_recv);                                
                                 //bftMap.put(key,coin_recv);
                                 keySeq = IDGen(keySet);
-                                System.out.println(coin_send);        
-                                bftMap.put(keySeq,coin_send);
+                                bftMap.put(keySeq,spendCommand);
+                                //System.out.println(coin_send); 
+                                // if(bftMap == null){
+                                //     BFTMap<Integer, String> map = new BFTMap<>();
+                                // }      
+                                
 
 
                             }
