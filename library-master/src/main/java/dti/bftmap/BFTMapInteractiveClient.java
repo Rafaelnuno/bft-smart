@@ -54,18 +54,23 @@ public class BFTMapInteractiveClient {
             } else if (cmd.equalsIgnoreCase("MINT")) {
 
                 String value = console.readLine("Enter the value of the coin: ");
-                String coinId = Integer.toString(keySeq);
+                String coinId = Integer.toString(new Random().nextInt(1000));
                 String coin = "coin" + "|" + clientId + "|" + value + "|" + coinId;
                 Set<Integer> keysprev = bftMap.keySet();
                 keySeq = IDGen(keysprev);
                 // invokes the op on the servers
-                bftMap.put(keySeq, coin).toString();
+                String res = (String) bftMap.put(keySeq, coin).toString();
+                if (res.equals("0")) {
+                    System.out.println("Coin creation failed\n");
+                } else {
+                    System.out.println("\ncoin id: " + coinId + " created");
+                }
+
+                // Delete this
                 Set<Integer> keys = bftMap.keySet();
                 for (Integer k : keys) {
                     System.out.println(k + " : " + bftMap.get(k) + "\n");
                 }
-
-                System.out.println("\ncoin id: " + coinId + " created");
 
             } else if (cmd.equalsIgnoreCase("SPEND")) {
                 String coins = "";
@@ -119,9 +124,13 @@ public class BFTMapInteractiveClient {
                 Set<Integer> keys = bftMap.keySet();
                 keySeq = IDGen(keys);
                 // invokes the op on the servers
-                bftMap.put(keySeq, nft);
+                String res = (String) bftMap.put(keySeq, nft).toString();
 
-                System.out.println("\nkey-value pair added to the map\n");
+                if (res.equals("0")) {
+                    System.out.println("Nft creation failed");
+                } else {
+                    System.out.println("\nNft created\n");
+                }
 
             } else if (cmd.equalsIgnoreCase("REQUEST_NFT_TRANSFER")) {
 
@@ -143,8 +152,13 @@ public class BFTMapInteractiveClient {
                 Set<Integer> keys = bftMap.keySet();
                 keySeq = IDGen(keys);
 
-                bftMap.put(keySeq, transferRequest);
-                System.out.println("Done");
+                String res = (String) bftMap.put(keySeq, transferRequest).toString();
+
+                if (res.equals("0")) {
+                    System.out.println("Request failed");
+                } else {
+                    System.out.println("Request created\n");
+                }
 
             } else if (cmd.equalsIgnoreCase("MY_NFT_REQUESTS")) {
 
@@ -185,7 +199,7 @@ public class BFTMapInteractiveClient {
                         "process_nft_transfer" + "|" + clientId + "|" + nftId + "|" + buyerId + "|" + accept);
 
                 if (res == 0) {
-                    System.out.println("Something went wrong!");
+                    System.out.println("Transfer not processed");
                 } else {
                     System.out.println("Transfer processed");
                 }
@@ -194,8 +208,12 @@ public class BFTMapInteractiveClient {
                 String nftID = console.readLine("Enter the id of the nft: ");
                 String cancelRequest = "cancel_request" + "|" + clientId + "|" + nftID;
                 // invokes the op on the servers
-                bftMap.remove(cancelRequest);
-                System.out.println("Pedido cancelado");
+                String res = (String) bftMap.remove(cancelRequest).toString();
+                if (res.equals("0")) {
+                    System.out.println("Request not canceled");
+                } else {
+                    System.out.println("Request canceled");
+                }
 
             } else if (cmd.equalsIgnoreCase("EXIT")) {
 

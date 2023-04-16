@@ -94,8 +94,10 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                         }
 
                         return BFTMapMessage.toBytes(response);
+                    } else {
+                        response.setValue("0");
+                        return BFTMapMessage.toBytes(response);
                     }
-                    break;
 
                 case MINT_NFT:
 
@@ -115,13 +117,13 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                     System.out.println(nftExists);
                     if (nftExists) {
                         System.out.println("entrei");
-                        response.setValue("Already exists a NFT with that name");
+                        response.setValue("0");
                         return BFTMapMessage.toBytes(response);
                     }
 
                     V oldV = replicaMap.put(request.getKey(), request.getValue());
                     if (oldV != null) {
-                        response.setValue(oldV);
+                        response.setValue("1");
                     } else {
                         response.setValue(request.getKey());
                     }
@@ -132,39 +134,76 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                     String[] transferTokens = request.getValue().toString().split("\\|");
                     String clienId = transferTokens[1];
                     String nftId = transferTokens[2];
-
+                    int val = Integer.parseInt(transferTokens[4]);
+                    String[] coinsId = transferTokens[3].toString().split(",");
+                    int size_coinsId = coinsId.length;
+                    int nft_exists = 0, coin_exists = 0, alr_req = 0;
+                    int total_amount = 0;
                     Set<K> keySet = replicaMap.keySet();
                     System.out.println("Tree before request nft transfer");
+
+                    // Check if nft exists
+                    for (K key : keySet) {
+                        V nftEnt = replicaMap.get(key);
+                        String[] nft_token = nftEnt.toString().split("\\|");
+                        if (nft_token[0].equals("nft") && nft_token[4].equals(nftId)) {
+                            nft_exists = 1;
+                        }
+
+                    }
+
+                    // Check if coinid exists and coin belong to clientId and total amount
+                    for (K key : keySet) {
+                        V nftEnt = replicaMap.get(key);
+                        String[] nft_token = nftEnt.toString().split("\\|");
+                        for (String c : coinsId) {
+                            if (nft_token[0].equals("coin") && nft_token[3].equals(c) && nft_token[1].equals(clienId)) {
+                                coin_exists += 1;
+                                total_amount += Integer.parseInt(nft_token[2]);
+                            }
+                        }
+                    }
+
+                    // Check if there's already a req
                     for (K key : keySet) {
 
                         V nftEntry = replicaMap.get(key);
                         System.out.println(key + " : " + nftEntry + "\n");
                         String[] token = nftEntry.toString().split("\\|");
                         if (token[0].equals("nft_request") && clienId.equals(token[1]) && nftId.equals(token[2])) {
-                            response.setValue("You already have a nft request for this nft");
+                            alr_req = 1;
+                            response.setValue("0");
                             return BFTMapMessage.toBytes(response);
                         }
                     }
 
-                    replicaMap.put(request.getKey(), request.getValue());
-                    System.out.println(response.equals(null));
-                    return BFTMapMessage.toBytes(response);
+                    if (size_coinsId == coin_exists && total_amount >= val && nft_exists == 1 && alr_req == 0) {
+                        replicaMap.put(request.getKey(), request.getValue());
+                        response.setValue("1");
+                        return BFTMapMessage.toBytes(response);
+                    } else {
+                        response.setValue("0");
+                        return BFTMapMessage.toBytes(response);
+                    }
 
                 case CANCEL_REQUEST_NFT_TRANSFER:
                     String[] cancelTokens = request.getValue().toString().split("\\|");
                     String IssuerId = cancelTokens[1];
                     String nftID = cancelTokens[2];
+                    int nft_canc_exists = 0;
+                    Set<K> keySetCancel = replicaMap.keySet();
 
                     for (Map.Entry<K, V> entry : replicaMap.entrySet()) {
                         String[] entryTokens = entry.getValue().toString().split("\\|");
                         if (entryTokens[0].equals("nft_request") && entryTokens[1].equals(IssuerId)
                                 && entryTokens[2].equals(nftID)) {
                             replicaMap.remove(entry.getKey());
+                            response.setValue("1");
                             return BFTMapMessage.toBytes(request);
                         }
                     }
 
-                    response.setValue("No matching NFT transfer request found");
+                    response.setValue("0");
                     return BFTMapMessage.toBytes(response);
 
                 case PROCESS_NFT_TRANSFER:
@@ -291,6 +330,7 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                         } else {
                             System.out.println("False");
                             response.setValue(0);
+                            return BFTMapMessage.toBytes(response);
                         }
                     } else {
                         System.out.println("Checking went wrong");
