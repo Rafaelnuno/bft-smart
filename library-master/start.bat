@@ -1,6 +1,7 @@
 @echo off
 
-cd /d "C:\Users\rafap\OneDrive\Documentos\GitHub\bft-smart\library-master\build\install\library"
+REM cd /d "C:\Users\rafap\OneDrive\Documentos\GitHub\bft-smart\library-master\build\install\library"
+cd /d "D:\Exercicios\bft-smart\library-master\build\install\library"
 
 start cmd /k smartrun.cmd dti.bftmap.BFTMapServer 0
 start cmd /k smartrun.cmd dti.bftmap.BFTMapServer 1

@@ -11,10 +11,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.UUID;
 
 public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
     private final Logger logger = LoggerFactory.getLogger("bftsmart");
@@ -26,6 +28,7 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
     public BFTMapServer(int id) {
         replicaMap = new TreeMap<>();
         replica = new ServiceReplica(id, this, this);
+
     }
 
     public static void main(String[] args) {
@@ -55,45 +58,61 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                     }
                     return BFTMapMessage.toBytes(response);
                 case SIZE:
-                    
+                    response.setValue(replicaMap.size());
+                    return BFTMapMessage.toBytes(response);
                 case REMOVE:
                 case SPEND:
-                String[] spendTokens = request.getValue().toString().split("\\|");
-                String[] coinsToSpend = spendTokens[0].split(",");
-                String receiver = spendTokens[1];
-                int coinvalue = Integer.parseInt(spendTokens[2]);
-                List<K> coinIds = new ArrayList<>();
-                int coinsValue = 0;
-                for (String coinToSpend : coinsToSpend) {
-                    K coinId = (K) ("coin" + coinToSpend);
-                    Object coinValue = replicaMap.get(coinId);
-                    if (coinValue instanceof String && ((String) coinValue).startsWith("coin|4|")) {
-                        int coinAmount = Integer.parseInt(coinValue.toString().split("\\|")[2]);
-                        coinIds.add(coinId);
-                        coinsValue += coinAmount;
+                    int totalCoins = 0;
+                    int remainingValue = 0;
+                    String[] spend = request.getValue().toString().split("\\|");
+                    List<Integer> usedCoins = new ArrayList<>();
+                    int senderId = Integer.parseInt(spend[1]);
+                    int receiverId = Integer.parseInt(spend[3]);
+                    int spendValue = Integer.parseInt(spend[4]);
+
+                for (String coin : spend[2].split(",")) {
+                    try {
+                        String[] ret = replicaMap.get(Integer.parseInt(coin)).toString().split("\\|");
+                        int coinValue = Integer.parseInt(ret[2]);
+                        int coinOwnerId = Integer.parseInt(ret[1]);
+
+                        // Check if the coin belongs to this client
+                        if (coinOwnerId != senderId) {
+                            response.setValue(0); 
+                            return BFTMapMessage.toBytes(response);
+                        }
+
+                        totalCoins += coinValue;
+                        usedCoins.add(Integer.parseInt(coin));
+                    } catch(NumberFormatException | NullPointerException e) {
+                        response.setValue(0); 
+                        return BFTMapMessage.toBytes(response);
                     }
                 }
-                if (coinsValue >= coinvalue) {
-                    String receiverCoinValue = "coin|" + receiver + "|" + coinvalue;
-                    V issuerCoinValue = null;
-                    if (coinsValue > coinvalue) {
-                        int remainingValue = coinsValue - coinvalue;
-                        issuerCoinValue = (V) ("coin|4|" + remainingValue);
+                        if(totalCoins < spendValue) {
+                            response.setValue(0); 
+                            return BFTMapMessage.toBytes(response);
+                }
+
+                remainingValue = totalCoins - spendValue;
+                V receiverCoin = (V) ("coin"+ "|" + spend[3] + "|" + spend[4]);
+                replicaMap.put(request.getKey(), receiverCoin);
+
+                for (Integer usedCoin : usedCoins) {
+                    replicaMap.remove(usedCoin);
+                }
+
+                if (remainingValue > 0) {
+                    V senderCoin = (V) ("coin"+ "|" + spend[1] + "|" + remainingValue); 
+                    K key = (K) Integer.valueOf(Integer.valueOf(request.getKey().toString())+1);
+                    V oldVal = replicaMap.put(key, senderCoin);
+
+                    if(oldVal != null) {
+                        response.setValue(oldVal);
+                    } else {
+                        response.setValue(key);
                     }
-                    // update map with new coins
-                    K receiverCoinId = (K) ("coin" + UUID.randomUUID().toString());
-                    replicaMap.put(receiverCoinId, (V) receiverCoinValue);
-                    if (issuerCoinValue != null) {
-                        K issuerCoinId = (K) ("coin" + UUID.randomUUID().toString());
-                        replicaMap.put(issuerCoinId, issuerCoinValue);
-                        response.setValue(issuerCoinId);
-                    }
-                    for (K coinId : coinIds) {
-                        replicaMap.remove(coinId);
-                    }
-                } else {
-                    // not enough coins to spend
-                    response.setValue(0);
+                        return BFTMapMessage.toBytes(response);
                 }
                 case MINT:
                 	String[] coinTokens = request.getValue().toString().split("\\|");
@@ -112,7 +131,74 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                         return BFTMapMessage.toBytes(response);
                 	}
                     break;
-                
+
+                case REQUEST_NFT_TRANSFER:
+                        String[] transferTokens = request.getValue().toString().split("\\|");
+                        String clienId = transferTokens[1];
+                        String nftId = transferTokens[2];
+                            
+                        Set<K> keySet = replicaMap.keySet();
+            
+                        for (K key : keySet) {
+                            V nftEntry = replicaMap.get(key);
+                            String[] token = nftEntry.toString().split("\\|");
+                            if (token[0].equals("nft_request") && clienId.equals(token[1]) && nftId.equals(token[2])) {
+                                response.setValue("You already have a nft request for this nft");
+                                return BFTMapMessage.toBytes(response);
+                            }
+                        }
+            
+                        replicaMap.put(request.getKey(),request.getValue());
+                        System.out.println(response.equals(null));
+                        return BFTMapMessage.toBytes(response);
+                            
+                case MINT_NFT:
+
+                       String[] nftTokens = request.getValue().toString().split("\\|");
+                       String user_ID = nftTokens[1];
+                       String nftName = nftTokens[2];
+                                                  
+                       boolean nftExists = false;
+                       for(Map.Entry<K, V> nftEntry : replicaMap.entrySet()) {
+                           String[] nft = ((String) nftEntry.getValue()).split("\\|");
+                           if(nft[0].equals("nft") && nft[2].equals(nftName)) {
+                               nftExists = true;
+                               break;
+                           }
+                       }
+                                          
+                       if(nftExists){
+                           request.setValue("There is an NFT with that name");
+                           return BFTMapMessage.toBytes(request);
+                       }
+                   
+                       // Adiciona uma nova NFT apenas se a verificação indicar que não há uma NFT com o mesmo nome
+                       V oldV = replicaMap.put(request.getKey(), request.getValue());
+                       if(oldV != null) {
+                           response.setValue(oldV);
+                       } else {
+                           response.setValue(request.getKey());
+                       }
+                   
+                       return BFTMapMessage.toBytes(response);
+         
+                case CANCEL_NFT_REQUEST:
+
+                        String[] cancelTokens = request.getValue().toString().split("\\|");
+                        String IssuerId = cancelTokens[1];
+                        nftId = cancelTokens[2];
+                        
+                      for (Map.Entry<K,V> entry : replicaMap.entrySet()) {
+                          String[] entryTokens = entry.getValue().toString().split("\\|");
+                          if (entryTokens[0].equals("nft_request") && entryTokens[1].equals(IssuerId) && entryTokens[2].equals(nftId)) {
+                              replicaMap.remove(entry.getKey());
+                              return BFTMapMessage.toBytes(request);
+                          }
+                      }
+                      
+                      response.setValue("No matching NFT transfer request found");
+                      return BFTMapMessage.toBytes(response);
+                                
             }
 
             return null;
@@ -176,6 +262,18 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
         } catch (ClassNotFoundException | IOException ex) {
             ex.printStackTrace(); //debug instruction
         }
+    }
+
+    public static int IDGen(Set<Integer> keys) {
+        Set<Integer> usedIds = new HashSet<>(keys);
+        Random random = new Random();
+    
+        int random_int = random.nextInt(1000);
+        while (usedIds.contains(random_int)) {
+            random_int = random.nextInt(1000);
+        }
+    
+        return random_int;
     }
 
 }

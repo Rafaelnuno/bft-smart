@@ -64,9 +64,15 @@ public class BFTMap<K, V> implements Map<K, V> {
         	BFTMapMessage<K,V> request = new BFTMapMessage<>();
         	
         	if(token[0].equals("coin")) {
-	            request.setType(BFTMapRequestType.MINT);
+	               request.setType(BFTMapRequestType.MINT);
         	} else if (token[0].equals("spend")) {
                 request.setType(BFTMapRequestType.SPEND);
+            } else if (token[0].equals("nft")) {
+                request.setType(BFTMapRequestType.MINT_NFT);
+            }else if(token[0].equals("nft_request")){
+                    request.setType(BFTMapRequestType.REQUEST_NFT_TRANSFER);
+            }else if(token[0].equals("cancel_nft_request")){
+                    request.setType(BFTMapRequestType.CANCEL_NFT_REQUEST);
             }else {
 	            request.setType(BFTMapRequestType.PUT);
         	}
@@ -96,9 +102,23 @@ public class BFTMap<K, V> implements Map<K, V> {
     }
 
     @Override
-    public V remove(Object key) {
-        throw new UnsupportedOperationException("You are supposed to implement this method :)");
+    public V remove(Object cancel_request) {
+        // throw new UnsupportedOperationException("You are supposed to implement this method :)");
+        byte[] rep;
+        try {
+            BFTMapMessage<K,V> request = new BFTMapMessage<>();
+            request.setValue(cancel_request);
+            request.setType(BFTMapRequestType.CANCEL_NFT_REQUEST);
+            rep = serviceProxy.invokeOrdered(BFTMapMessage.toBytes(request));
+            BFTMapMessage<K,V> response = BFTMapMessage.fromBytes(rep);
+            return response.getValue();
+        }
+    catch (ClassNotFoundException | IOException ex) {
+        logger.error("Failed to deserialized response of PUT request");
+        return null;
     }
+ }
+
 
     @Override
     public Set<K> keySet() {
