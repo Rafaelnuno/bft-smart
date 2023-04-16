@@ -39,7 +39,7 @@ public class BFTMapInteractiveClient {
 
             if (cmd.equalsIgnoreCase("MY_COINS")) {
                 Set<Integer> keys = bftMap.keySet();
-                System.out.println("\nKeys in the map:");
+                System.out.println("\nYour Coins:");
                 for (int key : keys) {
 
                     String coin = (String) bftMap.get(key);
@@ -91,17 +91,17 @@ public class BFTMapInteractiveClient {
                 keySeq = IDGen(keys);
 
                 // invokes the op on the servers
-                String values = bftMap.put(keySeq, spendCommand).toString();
+                bftMap.put(keySeq, spendCommand);
 
-                if (values.equals("0")) {
+                /*if (values.equals("0")) {
                     System.out.println("\nInvalid spend operation.");
                 } else {
                     System.out.println("\nCoin id: " + values + " created for issuer.");
-                }
+                }*/
 
             } else if (cmd.equalsIgnoreCase("MY_NFTS")) {
                 Set<Integer> keys = bftMap.keySet();
-                System.out.println("\nKeys in the map:");
+                System.out.println("\nYour Nfts:");
 
                 for (int key : keys) {
                     String nft = (String) bftMap.get(key);

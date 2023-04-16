@@ -214,9 +214,9 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                     String buyerId = processTokens[3];
                     String accept = processTokens[4];
                     Set<K> keSet = replicaMap.keySet();
-                    int own = 0, exist = 0, has_money = 0, validity = 0;
+                    int own = 0, exist = 0, has_money = 0, validity = 0 , money = 0;
                     int v = 0, spendDone = 0, nftOwnerTrsf = 0;
-                    String coinId = "";
+                    ArrayList<String> coinsIdList = new ArrayList<>();
                     LocalDateTime now = LocalDateTime.now();
 
                     // Checking ownership
@@ -244,7 +244,7 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                                 && vTokens[1].equals(buyerId)) {
                             exist = 1;
                             v = Integer.parseInt(vTokens[4]);
-                            coinId = vTokens[3];
+                            coinsIdList.add(curr);
 
                             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                             LocalDateTime date = LocalDateTime.parse(vTokens[5], formatter);
@@ -258,44 +258,41 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
 
                     }
 
-                    for (K key : keSet) {
-                        String curr = (String) replicaMap.get(key);
-                        String[] vTokens = curr.toString().split("\\|");
-
-                        if (vTokens[0].equals("coin") && vTokens[1].equals(buyerId) && exist == 1) {
-
-                            has_money = (v <= Integer.parseInt(vTokens[2])) ? 1 : 0;
-                        }
+                    for( String c : coinsIdList) {
+                        String [] normalized = c.toString().split("\\|");
+                        money += Integer.parseInt(normalized[2]);
                     }
-
-                    if (own == 1 && has_money == 1 && exist == 1 && validity == 1) {
+                    System.out.println(own);
+                    System.out.println(money >= v);
+                    System.out.println(exist);
+                    System.out.println(validity);
+                    if (own == 1 && money >= v && exist == 1 && validity == 1) {
                         System.out.println("All ckecked");
                         if (accept.equals("true")) {
 
-                            for (K key : keSet) {
-                                String curr = (String) replicaMap.get(key);
-                                String[] vTokens = curr.toString().split("\\|");
+                            String allcoins = "";
 
-                                if (vTokens[0].equals("coin") && vTokens[3].equals(coinId)) {
+                            for( String c : coinsIdList) {
+                                String [] normalized = c.toString().split("\\|");
+                                allcoins += normalized[3];
+                                allcoins += ",";
+                            }
 
-                                    System.out.println("Strt spending");
-                                    String spendCommand = "spend" + "|" + vTokens[1] + "|" + coinId + "|" + cliId
-                                            + "|"
-                                            + v;
+                               
+                            System.out.println("Strt spending");
+                            String spendCommand = "spend" + "|" + buyerId + "|" + allcoins + "|" + cliId
+                                    + "|"
+                                    + v;
 
-                                    BFTMapMessage<K, V> n_req = new BFTMapMessage<>();
-                                    n_req.setType(BFTMapRequestType.SPEND);
-                                    n_req.setKey(request.getKey());
-                                    n_req.setValue(spendCommand);
+                            BFTMapMessage<K, V> n_req = new BFTMapMessage<>();
+                            n_req.setType(BFTMapRequestType.SPEND);
+                            n_req.setKey(request.getKey());
+                            n_req.setValue(spendCommand);
 
-                                    if (spend(n_req) == 1) {
-                                        spendDone = 1;
-                                    } else {
-                                        spendDone = 0;
-                                    }
-                                    break;
-
-                                }
+                            if (spend(n_req) == 1) {
+                                spendDone = 1;
+                            } else {
+                                spendDone = 0;
                             }
 
                             System.out.println("Nft Searchin");
@@ -328,10 +325,10 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                             }
 
                         } else {
-                            System.out.println("False");
-                            response.setValue(0);
-                            return BFTMapMessage.toBytes(response);
-                        }
+                        System.out.println("False");
+                        response.setValue(0);
+                        return BFTMapMessage.toBytes(response);
+                    }
                     } else {
                         System.out.println("Checking went wrong");
                         response.setValue(0);
@@ -349,76 +346,82 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
 
     public int spend(BFTMapMessage<K, V> request) throws IOException {
         BFTMapMessage<K, V> response = new BFTMapMessage<>();
-        int totalCoins = 0;
-        int remainingValue = 0;
-        String[] spend = request.getValue().toString().split("\\|");
-        List<K> usedCoins = new ArrayList<>();
-        int senderId = Integer.parseInt(spend[1]);
-        int receiverId = Integer.parseInt(spend[3]);
-        int spendValue = Integer.parseInt(spend[4]);
-        Set<K> set = replicaMap.keySet();
+                    int sum_coins = 0;
+                	int remaining_value = 0;
+                	String[] spend = request.getValue().toString().split("\\|");
+                    Set<K> keSet = replicaMap.keySet();
+                	for (String coin : spend[2].split(",")) {
 
-        for (K key : set) {
+                        for (K k : keSet) {
+                            try {
+                                String[] ret = replicaMap.get(k).toString().split("\\|");
+                                // Check if the coin belongs to this client
+                                if (Integer.parseInt(spend[1]) == Integer.parseInt(ret[1]) && ret[3].equals(coin)) {
+                                    sum_coins += Integer.parseInt(ret[2]); 
+                                    replicaMap.remove(k);
+                                    
+                                }else {
+                                    response.setValue(0);
+                                }
+                            }
+                            // Check if the coin exists
+                            catch(NumberFormatException | NullPointerException e) {
+                                response.setValue(0); 
+                                
+                            }
+                        }
+                		
+                	}
+                    System.out.println(sum_coins);
+                	if(sum_coins >= Integer.parseInt(spend[4])) {
 
-            String[] ret = replicaMap.get(key).toString().split("\\|");
-            if (ret[0].equals("coin") && ret[1].equals(Integer.toString(senderId))) {
-                int coinValue = Integer.parseInt(ret[2]);
-                int coinOwnerId = Integer.parseInt(ret[1]);
+                		//create new coin for the receiver 
+                		V receiver_coin = (V) ("coin"+ "|" + spend[3] + "|" + spend[4] + "|" + counter+5);
+                		replicaMap.put(request.getKey(), receiver_coin);
+                        System.out.println("1");
+                        Set<K> keys = replicaMap.keySet();
+                        //Set<K> keys2 = replicaMap.keySet();
+                        for (K k : keys) {
+                        System.out.println(k + " : " + replicaMap.get(k) + "\n");
+                        }
+                        // //remove all sender coins used in the transaction
+                		// for (String used_coin : spend[2].split(",")) {
 
-                // Check if the coin belongs to this client
-                if (coinOwnerId != senderId) {
-                    response.setValue(0);
-                    System.out.println(senderId);
-                    return 0;
-                }
+                        //     for(K k : keys2) {
 
-                totalCoins += coinValue;
-                usedCoins.add(key);
-            }
-        }
+                        //         String[] ret = replicaMap.get(k).toString().split("\\|");
 
-        if (totalCoins < spendValue) {
-            response.setValue(0);
-            System.out.println("saldo excedido");
-            return 0;
-        }
+                        //         if(ret[0].equals("coin") && ret[3].equals(used_coin)) {
+                        //             V removedValue = replicaMap.remove(k);   
+                        //         }
+                        //     }
+                			
+                        //}
+                        System.out.println("2");
+                        for (K k : keys) {
+                            System.out.println(k + " : " + replicaMap.get(k) + "\n");
+                        }
 
-        remainingValue = totalCoins - spendValue;
-        V receiverCoin = (V) ("coin" + "|" + spend[3] + "|" + spend[4] + "|"
-                + Integer.toString(counter));
-        // String nk = Integer.toString(new Random().nextInt(1000));
-        replicaMap.put(request.getKey(), receiverCoin);
-        System.out.println("Reqkey :" + request.getKey());
-        for (K usedCoin : usedCoins) {
-            System.out.println("UsedCoin :" + usedCoin);
-
-            replicaMap.remove(usedCoin);
-        }
-
-        counter += 1;
-        if (remainingValue > 0) {
-
-            V senderCoin = (V) ("coin" + "|" + spend[1] + "|" + Integer.toString(remainingValue) + "|"
-                    + Integer.toString(counter));
-            K key = usedCoins.get(0);
-
-            V oldVal = replicaMap.put(key, senderCoin);
-            System.out.println(replicaMap.get(key));
-
-            if (oldVal != null) {
-                response.setValue(oldVal);
-                System.out.println("OldVal :_" + oldVal);
-            } else {
-                response.setValue(key);
-            }
-        }
-        System.out.println("Keyset");
-        Set<K> keys = replicaMap.keySet();
-        for (K k : keys) {
-            System.out.println(k + " : " + replicaMap.get(k) + "\n");
-        }
-
-        return 1;
+                        //create new coin for the sender with the remaining value
+                		remaining_value = sum_coins - Integer.parseInt(spend[4]);
+                		V sender_coin = (V) ("coin"+ "|" + spend[1] + "|" + remaining_value + "|" + counter+10); 
+                		K key = (K) Integer.valueOf(Integer.valueOf(request.getKey().toString())+1);
+                		V oldVal = replicaMap.put(key, sender_coin);
+                        System.out.println("3");
+                        for (K k : keys) {
+                            System.out.println(k + " : " + replicaMap.get(k) + "\n");
+                            }
+                		if(oldVal != null) {
+                            response.setValue(oldVal);
+                        }else {
+                        	response.setValue(key);
+                        }
+                		
+                	}
+                	
+                    response.setValue(request.getValue()); //TODO change this to new coin
+                    
+                	return 1;
     }
 
     @Override
