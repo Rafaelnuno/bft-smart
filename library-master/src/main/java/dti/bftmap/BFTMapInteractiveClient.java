@@ -39,7 +39,7 @@ public class BFTMapInteractiveClient {
 
             if (cmd.equalsIgnoreCase("MY_COINS")) {
                 Set<Integer> keys = bftMap.keySet();
-                System.out.println("\nKeys in the map:");
+                System.out.println("\nmy coins:");
                 for (int key : keys) {
 
                     String coin = (String) bftMap.get(key);
@@ -47,7 +47,7 @@ public class BFTMapInteractiveClient {
                     if (values[0].equals("coin") && values[1].equals(Integer.toString(clientId))) {
                         String value = values[2];
                         String idcoin = values[3];
-                        System.out.println("Key " + idcoin + " -> value: " + value);
+                        System.out.println("coinId " + idcoin + " -> value: " + value);
                     }
                 }
 
@@ -66,11 +66,6 @@ public class BFTMapInteractiveClient {
                     System.out.println("\ncoin id: " + coinId + " created");
                 }
 
-                // Delete this
-                Set<Integer> keys = bftMap.keySet();
-                for (Integer k : keys) {
-                    System.out.println(k + " : " + bftMap.get(k) + "\n");
-                }
 
             } else if (cmd.equalsIgnoreCase("SPEND")) {
                 String coins = "";
@@ -101,7 +96,7 @@ public class BFTMapInteractiveClient {
 
             } else if (cmd.equalsIgnoreCase("MY_NFTS")) {
                 Set<Integer> keys = bftMap.keySet();
-                System.out.println("\nKeys in the map:");
+                System.out.println("\nmy nfts:");
 
                 for (int key : keys) {
                     String nft = (String) bftMap.get(key);
@@ -110,7 +105,7 @@ public class BFTMapInteractiveClient {
                         String nftname = nftTokens[2];
                         String uri = nftTokens[3];
                         String nftid = nftTokens[4];
-                        System.out.println("Key " + key + " -> name: " + nftname + " URI: " + uri + " nftId: " + nftid);
+                        System.out.println(" name: " + nftname + " URI: " + uri + " nftId: " + nftid);
                     }
 
                 }

@@ -109,14 +109,12 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                         V nftValue = nftEntry.getValue();
                         String[] nft = ((String) nftValue).split("\\|");
                         if (nft[0].equals("nft") && nftName.equals(nft[2])) {
-                            System.out.println("entrei1");
                             nftExists = true;
                             break;
                         }
                     }
-                    System.out.println(nftExists);
+                   
                     if (nftExists) {
-                        System.out.println("entrei");
                         response.setValue("0");
                         return BFTMapMessage.toBytes(response);
                     }
@@ -140,7 +138,7 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                     int nft_exists = 0, coin_exists = 0, alr_req = 0;
                     int total_amount = 0;
                     Set<K> keySet = replicaMap.keySet();
-                    System.out.println("Tree before request nft transfer");
+                 
 
                     // Check if nft exists
                     for (K key : keySet) {
@@ -226,7 +224,6 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
 
                         if (vTokens[0].equals("nft") && vTokens[4].equals(nId)) {
                             if (!vTokens[1].equals(cliId)) {
-                                System.out.println("The user doesn't own this nft\n");
                                 break;
                             } else {
                                 own = 1;
@@ -269,7 +266,6 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                     }
 
                     if (own == 1 && has_money == 1 && exist == 1 && validity == 1) {
-                        System.out.println("All ckecked");
                         if (accept.equals("true")) {
 
                             for (K key : keSet) {
@@ -277,8 +273,6 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                                 String[] vTokens = curr.toString().split("\\|");
 
                                 if (vTokens[0].equals("coin") && vTokens[3].equals(coinId)) {
-
-                                    System.out.println("Strt spending");
                                     String spendCommand = "spend" + "|" + vTokens[1] + "|" + coinId + "|" + cliId
                                             + "|"
                                             + v;
@@ -298,7 +292,7 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                                 }
                             }
 
-                            System.out.println("Nft Searchin");
+                            
                             for (K k : keSet) {
 
                                 String incurr = (String) replicaMap.get(k);
@@ -307,7 +301,7 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
 
                                 if (invTokens[0].equals("nft") && invTokens[4].equals(nId)) {
 
-                                    System.out.println("Entered");
+                                    
                                     String new_nft = "nft" + "|" + buyerId + "|" + invTokens[2] + "|"
                                             + invTokens[3] + "|"
                                             + invTokens[4];
@@ -328,7 +322,7 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                             }
 
                         } else {
-                            System.out.println("False");
+                           
                             response.setValue(0);
                             return BFTMapMessage.toBytes(response);
                         }
@@ -368,7 +362,7 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                 // Check if the coin belongs to this client
                 if (coinOwnerId != senderId) {
                     response.setValue(0);
-                    System.out.println(senderId);
+                    
                     return 0;
                 }
 
@@ -379,7 +373,7 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
 
         if (totalCoins < spendValue) {
             response.setValue(0);
-            System.out.println("saldo excedido");
+           
             return 0;
         }
 
@@ -388,9 +382,9 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                 + Integer.toString(counter));
         // String nk = Integer.toString(new Random().nextInt(1000));
         replicaMap.put(request.getKey(), receiverCoin);
-        System.out.println("Reqkey :" + request.getKey());
+       
         for (K usedCoin : usedCoins) {
-            System.out.println("UsedCoin :" + usedCoin);
+           
 
             replicaMap.remove(usedCoin);
         }
@@ -403,19 +397,14 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
             K key = usedCoins.get(0);
 
             V oldVal = replicaMap.put(key, senderCoin);
-            System.out.println(replicaMap.get(key));
+        
 
             if (oldVal != null) {
                 response.setValue(oldVal);
-                System.out.println("OldVal :_" + oldVal);
+                
             } else {
                 response.setValue(key);
             }
-        }
-        System.out.println("Keyset");
-        Set<K> keys = replicaMap.keySet();
-        for (K k : keys) {
-            System.out.println(k + " : " + replicaMap.get(k) + "\n");
         }
 
         return 1;
@@ -436,10 +425,10 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                 case GET:
                     V ret = replicaMap.get(request.getKey());
 
-                    System.out.println(ret);
+                    
 
                     if (ret != null) {
-                        System.out.println("Thre is a value");
+                        
                         response.setValue(ret);
                     }
                     return BFTMapMessage.toBytes(response);
