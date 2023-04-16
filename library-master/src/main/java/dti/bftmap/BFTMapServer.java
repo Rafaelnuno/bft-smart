@@ -15,16 +15,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.UUID;
 
 public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
     private final Logger logger = LoggerFactory.getLogger("bftsmart");
     private final ServiceReplica replica;
     private TreeMap<K, V> replicaMap;
-    private K test;
     private int counter = 0;
 
     // The constructor passes the id of the server to the super class
@@ -60,7 +57,24 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
                         response.setValue(oldValue);
                     }
                     return BFTMapMessage.toBytes(response);
-                case REMOVE:
+                case CHECK_OWNERSHIP:
+
+                    String[] ownTokens = request.getValue().toString().split("\\|");
+                    Set<K> keySetOwn = replicaMap.keySet();
+
+                    for (K key : keySetOwn) {
+                        String curr = (String) replicaMap.get(key);
+                        String[] vTokens = curr.toString().split("\\|");
+
+                        if (vTokens[0].equals(ownTokens[1]) && vTokens[1].equals(ownTokens[2])) {
+                            response.setValue(1);
+                            return BFTMapMessage.toBytes(response);
+                        }
+                    }
+
+                    response.setValue(0);
+                    return BFTMapMessage.toBytes(response);
+
                 case SPEND:
                     response.setValue(spend(request));
                     return BFTMapMessage.toBytes(response);
@@ -347,7 +361,6 @@ public class BFTMapServer<K, V> extends DefaultSingleRecoverable {
             V senderCoin = (V) ("coin" + "|" + spend[1] + "|" + Integer.toString(remainingValue) + "|"
                     + Integer.toString(counter));
             K key = usedCoins.get(0);
-            test = key;
 
             V oldVal = replicaMap.put(key, senderCoin);
             System.out.println(replicaMap.get(key));

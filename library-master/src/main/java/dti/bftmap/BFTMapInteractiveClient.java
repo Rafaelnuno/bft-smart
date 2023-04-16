@@ -8,14 +8,9 @@ import java.io.Console;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
-
-import io.netty.handler.codec.ValueConverter;
 
 public class BFTMapInteractiveClient {
 
@@ -148,55 +143,19 @@ public class BFTMapInteractiveClient {
                 Set<Integer> keys = bftMap.keySet();
                 keySeq = IDGen(keys);
 
-                // invokes the op on the servers
                 bftMap.put(keySeq, transferRequest);
                 System.out.println("Done");
-                // if (responseValue.equals("0")) {
-                // System.out.println("\nInvalid transfer request.");
-                // } else {
-                // System.out.println("\nTransfer request created with id: " + responseValue);
-                // }
 
-            } else if (cmd.equalsIgnoreCase("GET")) {
-
-                int key;
-                try {
-                    key = Integer.parseInt(console.readLine("Enter a numeric key: "));
-                } catch (NumberFormatException e) {
-                    System.out.println("\tThe key is supposed to be an integer!\n");
-                    continue;
-                }
-
-                // invokes the op on the servers
-                // String value = bftMap.get(key);
-
-                // System.out.println("\nValue associated with " + key + ": " + value + "\n");
-
-            }
-
-            else if (cmd.equalsIgnoreCase("MY_NFT_REQUESTS")) {
+            } else if (cmd.equalsIgnoreCase("MY_NFT_REQUESTS")) {
 
                 String nftId = console.readLine("Enter the id of the nft: ");
 
                 Set<Integer> keySet = bftMap.keySet();
-                List<String> nftsIds = new ArrayList<>();
-                int own = 0;
 
-                // Checking ownership
-                for (Integer key : keySet) {
-                    String curr = (String) bftMap.get(key);
-                    String[] vTokens = curr.toString().split("\\|");
+                String ownership = "own" + "|" + "nft" + "|" + clientId;
 
-                    if (vTokens[0].equals("nft") && vTokens[4].equals(nftId)) {
-                        if (!vTokens[1].equals(Integer.toString(clientId))) {
-                            System.out.println("The user doesn't own this nft\n");
-                            break;
-                        } else {
-                            own = 1;
-                            break;
-                        }
-                    }
-                }
+                Set<Integer> keys = bftMap.keySet();
+                int own = (Integer) bftMap.put(IDGen(keys), ownership);
 
                 if (own == 1) {
 
@@ -237,10 +196,6 @@ public class BFTMapInteractiveClient {
                 // invokes the op on the servers
                 bftMap.remove(cancelRequest);
                 System.out.println("Pedido cancelado");
-
-            } else if (cmd.equalsIgnoreCase("SIZE")) {
-
-                System.out.println("\tYou are supposed to implement this command :)\n");
 
             } else if (cmd.equalsIgnoreCase("EXIT")) {
 

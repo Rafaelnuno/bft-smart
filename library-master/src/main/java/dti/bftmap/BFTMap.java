@@ -76,6 +76,8 @@ public class BFTMap<K, V> implements Map<K, V> {
                 request.setType(BFTMapRequestType.REQUEST_NFT_TRANSFER);
             } else if (token[0].equals("process_nft_transfer")) {
                 request.setType(BFTMapRequestType.PROCESS_NFT_TRANSFER);
+            } else if (token[0].equals("own")) {
+                request.setType(BFTMapRequestType.CHECK_OWNERSHIP);
             } else {
                 request.setType(BFTMapRequestType.PUT);
             }
